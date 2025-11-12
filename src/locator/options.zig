@@ -1,0 +1,7 @@
+app_name: ?[]const u8 = null,
+app_author: ?[]const u8 = null,
+version: ?[]const u8 = null,
+roaming: ?bool = null,
+multipath: ?bool = null,
+opinion: ?bool = null,
+ensure_exists: ?bool = null,
