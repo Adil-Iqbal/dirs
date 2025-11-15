@@ -1,25 +1,29 @@
 const Locator = @This();
 
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 const Options = @import("options.zig");
 const DirsError = @import("error.zig").DirsError;
 
+
 const VTable = struct {
-    v_userData: *const fn(*const anyopaque, *const Options) DirsError![]const u8,
-    v_siteData: *const fn(*const anyopaque, *const Options) DirsError![]const u8,
-    v_userConfig: *const fn(*const anyopaque, *const Options) DirsError![]const u8, 
-    v_siteConfig: *const fn(*const anyopaque, *const Options) DirsError![]const u8, 
-    v_userCache: *const fn(*const anyopaque, *const Options) DirsError![]const u8, 
-    v_siteCache: *const fn(*const anyopaque, *const Options) DirsError![]const u8, 
-    v_userState: *const fn(*const anyopaque, *const Options) DirsError![]const u8, 
-    v_userLog: *const fn(*const anyopaque, *const Options) DirsError![]const u8, 
-    v_userDocuments: *const fn(*const anyopaque) DirsError![]const u8, 
-    v_userPictures: *const fn(*const anyopaque) DirsError![]const u8, 
-    v_userVideos: *const fn(*const anyopaque) DirsError![]const u8, 
-    v_userMusic: *const fn(*const anyopaque) DirsError![]const u8, 
-    v_userDesktop: *const fn(*const anyopaque) DirsError![]const u8, 
-    v_userRuntime: *const fn(*const anyopaque, *const Options) DirsError![]const u8, 
-    v_siteRuntime: *const fn(*const anyopaque, *const Options) DirsError![]const u8,
+    v_getUserHomeOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8,
+    v_getUserDataOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8,
+    v_getSiteDataOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8,
+    v_getUserConfigOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
+    v_getSiteConfigOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
+    v_getUserCacheOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
+    v_getSiteCacheOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
+    v_getUserStateOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
+    v_getUserLogOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
+    v_getUserDocumentsOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8,
+    v_getUserPicturesOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8, 
+    v_getUserVideosOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8, 
+    v_getUserMusicOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8, 
+    v_getUserDesktopOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8, 
+    v_getUserRuntimeOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
+    v_getSiteRuntimeOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8,
+    v_pathSeperator: *const fn(*const anyopaque) u8,
 };
 
 impl: *const anyopaque,
@@ -28,16 +32,20 @@ vtable: *const VTable,
 inline fn LocatorDelegate(impl_obj: anytype) type {
     const ImplType = @TypeOf(impl_obj);
     return struct {
-        fn userData(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userData(o);
+        fn getUserHomeOwned(impl: *const anyopaque, alloc: Allocator) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserHomeOwned(alloc);
         }
 
-        fn siteData(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).siteData(o);
+        fn getUserDataOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserDataOwned(alloc, o);
         }
 
-        fn userConfig(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userConfig(o);
+        fn getSiteDataOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getSiteDataOwned(alloc, o);
+        }
+
+        fn getUserConfigOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserConfigOwned(alloc, o);
         }
 
         fn siteConfig(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
@@ -87,6 +95,10 @@ inline fn LocatorDelegate(impl_obj: anytype) type {
         fn siteRuntime(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
             return TPtr(ImplType, impl).siteRuntime(o);
         }
+
+        fn pathSeperator(impl: *const anyopaque) u8 {
+            return TPtr(ImplType, impl).pathSeperator();
+        }
     };
 }
 
@@ -98,21 +110,23 @@ fn TPtr(T: type, opaque_ptr: *const anyopaque) T {
 pub fn implBy(impl_obj: anytype) Locator {
     const delegate = LocatorDelegate(impl_obj);
     const vtable: VTable = .{
-        .v_userData = delegate.userData,
-        .v_siteData = delegate.siteData,
-        .v_userConfig = delegate.userConfig, 
-        .v_siteConfig = delegate.siteConfig, 
-        .v_userCache = delegate.userCache, 
-        .v_siteCache = delegate.siteCache, 
-        .v_userState = delegate.userState, 
-        .v_userLog = delegate.userLog, 
-        .v_userDocuments = delegate.userDocuments, 
-        .v_userPictures = delegate.userPictures, 
-        .v_userVideos = delegate.userVideos, 
-        .v_userMusic = delegate.userMusic, 
-        .v_userDesktop = delegate.userDesktop, 
-        .v_userRuntime = delegate.userRuntime, 
-        .v_siteRuntime = delegate.siteRuntime,
+        .v_getUserHomeOwned = delegate.getUserHomeOwned,
+        .v_getUserDataOwned = delegate.getUserDataOwned,
+        .v_getSiteDataOwned = delegate.getSiteDataOwned,
+        .v_getUserConfigOwned = delegate.getUserConfigOwned, 
+        .v_getSiteConfigOwned = delegate.getSiteConfigOwned, 
+        .v_getUserCacheOwned = delegate.getUserCacheOwned, 
+        .v_getSiteCacheOwned = delegate.getSiteCacheOwned, 
+        .v_getUserStateOwned = delegate.getUserStateOwned, 
+        .v_getUserLogOwned = delegate.getUserLogOwned, 
+        .v_getUserDocumentsOwned = delegate.getUserDocumentsOwned, 
+        .v_getUserPicturesOwned = delegate.getUserPicturesOwned, 
+        .v_getUserVideosOwned = delegate.getUserVideosOwned, 
+        .v_getUserMusicOwned = delegate.getUserMusicOwned, 
+        .v_getUserDesktopOwned = delegate.getUserDesktopOwned, 
+        .v_getUserRuntimeOwned = delegate.getUserRuntimeOwned, 
+        .v_getSiteRuntimeOwned = delegate.getSiteRuntimeOwned,
+        .v_pathSeperator = delegate.pathSeperator,
     };
     return .{
         .impl = impl_obj,

@@ -60,31 +60,39 @@ pub fn init(tag: *const Tag) void {
     };
 }
 
-/// Standard directory for storage of user-owned and application-specific files
-/// that the user wouldn't modify but uould reasonably keep or back-up.
-pub fn ownedUserData(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+/// Non-standard directory for application storage. Consider only for bespoke
+/// solutions. Caller is responsible for freeing the returned value.
+pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserData(o, alloc);
+    return Dirs.locator.getUserHomeOwned(alloc);
+}
+
+/// Standard directory for storage of user-owned and application-specific files
+/// that the user wouldn't modify but uould reasonably keep or back-up. Caller
+/// is responsible for freeing the returned value.
+pub fn getUserDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    runtimeInitIfNeeded();
+    return Dirs.locator.getUserDataOwned(o, alloc);
 }
 
 /// Standard directory for storage of user-owned and application-specific files
 /// that the users wouldn't modify but would reasonably keep or back-up.
 /// Available to all users.
-pub fn ownedSiteData(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getSiteDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedSiteData(o, alloc);
+    return Dirs.locator.getSiteDataOwned(o, alloc);
 }
 
 /// Standard directory for storage of user-specific configuration files.
 /// Consider for editable files that customize the behavior of the application.
-pub fn ownedUserConfig(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getUserConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserConfig(o, alloc);
 }
 
 /// Standard directory for storage of configuration files needed by all users.
 /// Consider for editable files that customize the behavior of the application.
-pub fn ownedSiteConfig(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getSiteConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedSiteConfig(o, alloc);
 }
@@ -92,7 +100,7 @@ pub fn ownedSiteConfig(o: *const Options, alloc: Allocator) DirsError![]const u8
 /// Standard directory for storage of user specific cached data that can be 
 /// deleted at any time without loss of application functionality. 
 /// Consider for downloaded assets or compiled templates.
-pub fn ownedUserCache(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getUserCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserCache(o, alloc);
 }
@@ -100,7 +108,7 @@ pub fn ownedUserCache(o: *const Options, alloc: Allocator) DirsError![]const u8 
 /// Standard directory for storage of cached data for all users that can be 
 /// deleted at any time without loss of application functionality. 
 /// Consider for downloaded assets or compiled templates.
-pub fn ownedSiteCache(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getSiteCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedSiteCache(o, alloc);
 }
@@ -108,14 +116,14 @@ pub fn ownedSiteCache(o: *const Options, alloc: Allocator) DirsError![]const u8 
 /// Standard directory for storage of user specific files that represent
 /// persistent state that must survive application restart.
 /// Consider for files that represent the data layer of the application.
-pub fn ownedUserState(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getUserStateOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserState(o, alloc);
 }
 
 /// Standard directory for storage of user specific log files.
 /// Consider for files that can be used to audit application behavior.
-pub fn ownedUserLog(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getUserLogOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserLog(o, alloc);
 }
@@ -123,49 +131,49 @@ pub fn ownedUserLog(o: *const Options, alloc: Allocator) DirsError![]const u8 {
 /// Standard directory for storage of user-owned files that are
 /// application-agnostic. Consider for files that the user would reasonably be
 /// expcted to use outside the context of your application, such as exports.
-pub fn ownedUserDocuments(alloc: Allocator) DirsError![]const u8 {
+pub fn getUserDocumentsOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserDocuments(alloc);
 }
 
 /// Standard directory for storage of user-specific image files.
 /// Consider for file formats: .jpg, .gif, .png, .tiff
-pub fn ownedUserPictures(alloc: Allocator) DirsError![]const u8 {
+pub fn getUserPicturesOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserPictures(alloc);
 }
 
 /// Standard directory for storage of user-specific video files.
 /// Consider for file formats: .mp4, .mov, .wmv
-pub fn ownedUserVideos(alloc: Allocator) DirsError![]const u8 {
+pub fn getUserVideosOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserVideos(alloc);
 }
 
 /// Standard directory for storage of user-specific audio files. 
 /// Consider for file formats: .wav, .mp3, .midi
-pub fn ownedUserMusic(alloc: Allocator) DirsError![]const u8 {
+pub fn getUserMusicOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserMusic(alloc);
 }
 
 /// Standard directory that renders file contents on the user's 
 /// Desktop. Consider for shortcuts and symlinks to your application.
-pub fn ownedUserDesktop(alloc: Allocator) DirsError![]const u8 {
+pub fn getUserDesktopOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserDesktop(alloc);
 }
 
 /// Standard directory for storage of user specific temporary files that
 /// support application runtime.
-pub fn ownedUserRuntime(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getUserRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedUserRuntime(o, alloc);
 }
 
 /// Standard directory for storage of temporary files that support application
 /// runtime for all users.
-pub fn ownedSiteRuntime(o: *const Options, alloc: Allocator) DirsError![]const u8 {
+pub fn getSiteRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.ownedSiteRuntime(o, alloc);
 }

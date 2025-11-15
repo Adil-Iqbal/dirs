@@ -51,7 +51,7 @@ fn isBlank(s: *[]const u8) bool {
 
 /// Attempts to determine user's $HOME directory. Caller is responsible for
 /// freeing the returned value.
-fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
+pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
     if (std.process.getEnvVarOwned(alloc, "HOME")) |user_home| {
         if (!isBlank(&user_home))
             return user_home;
@@ -93,11 +93,13 @@ const default_site_data: []const u8 = "/usr/local/share:/user/share";
 
 pub fn getSiteDataOwned(self: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
     var site_data_dirs: ?[]const u8 = null;
+    defer if (site_data_dirs != null) alloc.free(site_data_dirs);
 
     if (std.process.getEnvVarOwned(alloc, "XDG_DATA_DIRS") catch null) |xdg_data_dirs| {
-        defer alloc.free(xdg_data_dirs);
         if (!isBlank(&xdg_data_dirs)) {
             site_data_dirs = xdg_data_dirs;
+        } else {
+            alloc.free(xdg_data_dirs);
         }
     }
 
@@ -107,7 +109,6 @@ pub fn getSiteDataOwned(self: *const Self, alloc: Allocator, o: *const Options) 
 
     if (site_data_dirs == null) {
         site_data_dirs = alloc.dupe(u8, default_site_data);
-        defer alloc.free(site_data_dirs);
     }
     
     if (!is_multipath_value)
