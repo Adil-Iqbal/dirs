@@ -1,66 +1,76 @@
+const std = @import("std");
+
 const Options = @import("options.zig");
 const DirsError = @import("error.zig").DirsError;
+const Allocator = std.mem.Allocator;
 
 const Self = @This();
 
-pub fn userData(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserHomeOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn siteData(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserDataOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userConfig(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getSiteDataOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn siteConfig(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserConfigOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userCache(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getSiteConfigOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn siteCache(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserCacheOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userState(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getSiteCacheOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userLog(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserStateOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userDocuments(_: *const Self) DirsError![]const u8 {
+pub fn getUserLogOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userPictures(_: *const Self) DirsError![]const u8 {
+pub fn getUserDocumentsOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userVideos(_: *const Self) DirsError![]const u8 {
+pub fn getUserPicturesOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userMusic(_: *const Self) DirsError![]const u8 {
+pub fn getUserVideosOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userDesktop(_: *const Self) DirsError![]const u8 {
+pub fn getUserMusicOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn userRuntime(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserDesktopOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
-pub fn siteRuntime(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOSError;
 }
 
+pub fn getSiteRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
+    return DirsError.UnsupportedOSError;
+}
+
+pub fn pathSeperator(_: *const Self) u8 {
+    return DirsError.UnsupportedOSError;
+}
 
