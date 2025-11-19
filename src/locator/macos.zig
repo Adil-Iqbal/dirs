@@ -6,7 +6,7 @@ const Allocator = std.mem.Allocator;
 
 const Self = @This();
 
-pub fn getUserHomeOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
+pub fn getUserHomeOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 

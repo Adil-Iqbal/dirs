@@ -5,14 +5,14 @@ const Tag = std.Target.Os.Tag;
 const Locator = @import("locator/interface.zig");
 const UnsupportedOSLocator = @import("locator/unsupported.zig");
 
-/// Consider using `init` method instead.
+/// Consider using `init` method instead!
 ///
 /// If your app will only run on Windows OS and is severely memory constrained,
 /// use `WinLocator` directly to maximally reduce the memory footprint of this
 /// library.
 ///
 /// const dirs = @import("dirs").WinLocator {};
-pub const WinLocator = @import("locator/win.zig");
+pub const WinLocator = @import("./locator/win.zig");
 
 /// Consider using `init` method instead.
 ///
@@ -51,7 +51,7 @@ fn runtimeInitIfNeeded() void {
 /// safely reduce the memory footprint of this library.
 /// 
 /// dirs.init(builtin.target.os.tag);
-pub fn init(tag: *const Tag) void {
+pub fn init(tag: Tag) void {
     Dirs.locator = switch(tag) {
         .windows => Locator.implBy(&WinLocator {}),
         .macos =>  Locator.implBy(&MacOSLocator {}),

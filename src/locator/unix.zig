@@ -6,7 +6,7 @@ const c = @cImport({
 const util = @import("util.zig");
 const Options = @import("options.zig");
 const DirsError = @import("error.zig");
-
+const ArrayList = std.ArrayList;
 const path = std.fs.path;
 const Allocator = std.mem.Allocator;
 const Self = @This();
@@ -18,7 +18,7 @@ fn takeAppendVersionOwned(alloc: Allocator, base_path: *[]const u8, o: *const Op
     if (isBlank(&o.version))
         return base_path;
     defer alloc.free(base_path);
-    return path.join(alloc, .{base_path.*, o.version});
+    return path.join(alloc, .{ base_path.*, o.version });
 }
 
 /// Takes ownership of argument used for parameter `base_path` and will return
@@ -28,7 +28,7 @@ fn takeAppendNameAndVersionOwned(alloc: Allocator, base_path: *[]const u8, o: *c
     if (isBlank(&o.app_name))
         return base_path;
     defer alloc.free(base_path);
-    const path_with_name = path.join(alloc, .{base_path.*, o.app_name});
+    const path_with_name = path.join(alloc, .{ base_path.*, o.app_name });
     return takeAppendVersionOwned(alloc, &path_with_name, o);
 }
 
@@ -37,7 +37,7 @@ fn takeAppendNameAndVersionOwned(alloc: Allocator, base_path: *[]const u8, o: *c
 fn appendNameAndVersionOwned(alloc: Allocator, base_path: *[]const u8, o: *const Options) []const u8 {
     if (isBlank(&o.app_name))
         return base_path;
-    const path_with_name = path.join(alloc, .{base_path.*, o.app_name});
+    const path_with_name = path.join(alloc, .{ base_path.*, o.app_name });
     return takeAppendVersionOwned(alloc, &path_with_name, o);
 }
 
@@ -49,9 +49,58 @@ fn isBlank(s: *[]const u8) bool {
     return std.mem.eql(u8, _s, "");
 }
 
+/// Returns true if `paths` contains `pathsep` byte.
+fn isMultiPath(paths: *[]const u8, pathsep: u8) bool {
+    return std.mem.indexOfScalar(u8, paths, pathsep) != null;
+}
+
+/// Transform the components of a multipath based on some transformation
+/// function. Caller is responsible for freeing the returned memory.
+fn transformMultiPathOwned(alloc: Allocator, path_str: *[]const u8, pathsep: u8, o: *const Options) DirsError![]const u8 {
+    var result: ArrayList = .empty;
+    errdefer result.deinit(alloc);
+
+    var first = true;
+    var it = std.mem.splitScalar(u8, path_str, pathsep);
+
+    while (it.next()) |dir| {
+        if (dir.len == 0) continue;
+
+        if (!first)
+            try result.append(alloc, pathsep);
+
+        first = false;
+        const full_path = appendNameAndVersionOwned(alloc, &dir, o);
+        defer alloc.free(full_path);
+
+        try result.appendSlice(alloc, full_path);
+    }
+
+    if (result.items.len == 0) {
+        result.deinit(alloc);
+        return DirsError.OperationFailed;
+    }
+
+    return result.toOwnedSlice(alloc);
+}
+
+/// Transform and return the first component of a multipath based on some
+/// transformation function. Caller is responsible for freeing the returned
+/// memory.
+fn getFirstPathOwned(alloc: Allocator, path_str: *[]const u8, pathsep: u8, o: *const Options) DirsError![]const u8 {
+    var it = std.mem.splitScalar(u8, path_str, pathsep);
+
+    while (it.next()) |dir| {
+        if (isBlank(&dir)) continue;
+        return appendNameAndVersionOwned(alloc, &dir, o);
+    }
+
+    return DirsError.OperationFailed;
+}
+
 /// Attempts to determine user's $HOME directory. Caller is responsible for
 /// freeing the returned value.
-pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
+pub fn getUserHomeOwned(_: *const Self, alloc: Allocator) ![]const u8 {
     if (std.process.getEnvVarOwned(alloc, "HOME")) |user_home| {
         if (!isBlank(&user_home))
             return user_home;
@@ -68,16 +117,15 @@ pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
     return DirsError.OperationFailed;
 }
 
-
 /// Returns: `$XDG_DATA_HOME/$app_name/$version`
 pub fn getUserDataOwned(_: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    if (std.process.getEnvVarOwned(alloc, "XDG_DATA_HOME") catch null) |xdg_data_home| 
+    if (std.process.getEnvVarOwned(alloc, "XDG_DATA_HOME") catch null) |xdg_data_home|
         if (!isBlank(&xdg_data_home))
             return takeAppendNameAndVersionOwned(alloc, &xdg_data_home, o);
 
     if (getUserHomeOwned(alloc) catch null) |user_home| {
         defer alloc.free(user_home);
-        const user_data_dir = path.join(alloc, .{user_home, ".local", "share"});
+        const user_data_dir = path.join(alloc, .{ user_home, ".local", "share" });
         return takeAppendNameAndVersionOwned(alloc, &user_data_dir, o);
     }
 
@@ -88,104 +136,74 @@ pub fn pathSeperator(_: *const Self) u8 {
     return ':';
 }
 
-const user_local_share: []const u8 = "/usr/local/share";
 const default_site_data: []const u8 = "/usr/local/share:/user/share";
 
 pub fn getSiteDataOwned(self: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    var site_data_dirs: ?[]const u8 = null;
-    defer if (site_data_dirs != null) alloc.free(site_data_dirs);
-
-    if (std.process.getEnvVarOwned(alloc, "XDG_DATA_DIRS") catch null) |xdg_data_dirs| {
-        if (!isBlank(&xdg_data_dirs)) {
-            site_data_dirs = xdg_data_dirs;
-        } else {
-            alloc.free(xdg_data_dirs);
-        }
-    }
-
     const pathsep = self.pathSeperator();
-    const is_multipath_requested: bool = if (o.multipath) |mp| mp else false;
-    const is_multipath_value: bool = std.mem.findScalar(u8, site_data_dirs, pathsep);
+    const wants_multipath = if (o.multipath) |mp| mp else false;
+    var xdg_data_dirs = std.process.getEnvVarOwned(alloc, "XDG_DATA_DIRS") catch null;
+    defer if (xdg_data_dirs != null) alloc.free(xdg_data_dirs);
 
-    if (site_data_dirs == null) {
-        site_data_dirs = alloc.dupe(u8, default_site_data);
-    }
-    
-    if (!is_multipath_value)
-        return takeAppendNameAndVersionOwned(alloc, &site_data_dirs, o);
+    if (isBlank(&xdg_data_dirs))
+        xdg_data_dirs = alloc.dupe(u8, default_site_data);
 
-    var num_paths: usize = 0;
-    var it = std.mem.splitScalar(u8, site_data_dirs, pathsep);
-    while(it.next()) |site_data_dir| {
-        if (!is_multipath_requested)
-            return takeAppendNameAndVersionOwned(alloc, &site_data_dir, o);
-        num_paths += 1;
-    }
+    if (!isMultiPath(&xdg_data_dirs, pathsep))
+        return appendNameAndVersionOwned(alloc, &xdg_data_dirs, o);
 
-    const size = 2 * num_paths - 1;
-    var paths: [size][]const u8 = undefined;
+    if (!wants_multipath)
+        return getFirstPathOwned(alloc, &xdg_data_dirs, pathsep);
 
-    var idx = 0;
-    var it2 = std.mem.splitScalar(u8, site_data_dirs, pathsep);
-    while(it2.next()) |dir| {
-        paths[idx] = appendNameAndVersionOwned(alloc, &dir, o);
-        defer alloc.free(paths[idx]);
-        if (idx + 1 < paths.len)
-            paths[idx + 1] = [_]u8{pathsep};
-        idx += 1;
-    }
-
-    return std.mem.concat(alloc, u8, paths);
+    return try transformMultiPathOwned(alloc, &xdg_data_dirs, pathsep, o);
 }
 
-pub fn getUserConfigOwned(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserConfigOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn siteConfig(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getSiteConfigOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userCache(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserCacheOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn siteCache(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getSiteCacheOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userState(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserStateOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userLog(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserLogOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userDocuments(_: *const Self) DirsError![]const u8 {
+pub fn getUserDocumentsOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userPictures(_: *const Self) DirsError![]const u8 {
+pub fn getUserPicturesOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userVideos(_: *const Self) DirsError![]const u8 {
+pub fn getUserVideosOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userMusic(_: *const Self) DirsError![]const u8 {
+pub fn getUserMusicOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userDesktop(_: *const Self) DirsError![]const u8 {
+pub fn getUserDesktopOwned(_: *const Self, _: Allocator) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn userRuntime(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getUserRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn siteRuntime(_: *const Self, _: *const Options) DirsError![]const u8 {
+pub fn getSiteRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }

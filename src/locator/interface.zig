@@ -23,7 +23,7 @@ const VTable = struct {
     v_getUserDesktopOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8, 
     v_getUserRuntimeOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
     v_getSiteRuntimeOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8,
-    v_pathSeperator: *const fn(*const anyopaque) u8,
+    v_pathSeperator: *const fn(*const anyopaque) DirsError!u8,
 };
 
 impl: *const anyopaque,
@@ -48,52 +48,52 @@ inline fn LocatorDelegate(impl_obj: anytype) type {
             return TPtr(ImplType, impl).getUserConfigOwned(alloc, o);
         }
 
-        fn siteConfig(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).siteConfig(o);
+        fn getSiteConfigOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getSiteConfigOwned(alloc, o);
         }
 
-        fn userCache(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userCache(o);
+        fn getUserCacheOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserCacheOwned(alloc, o);
         }
 
-        fn siteCache(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).siteCache(o);
+        fn getSiteCacheOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getSiteCacheOwned(alloc, o);
         }
 
-        fn userState(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userState(o);
+        fn getUserStateOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserStateOwned(alloc, o);
         }
 
-        fn userLog(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userLog(o);
+        fn getUserLogOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserLogOwned(alloc, o);
         }
 
-        fn userDocuments(impl: *const anyopaque) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userDocuments();
+        fn getUserDocumentsOwned(impl: *const anyopaque, alloc: Allocator) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserDocumentsOwned(alloc);
         }
 
-        fn userPictures(impl: *const anyopaque) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userPictures();
+        fn getUserPicturesOwned(impl: *const anyopaque, alloc: Allocator) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserPicturesOwned(alloc);
         }
 
-        fn userVideos(impl: *const anyopaque) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userVideos();
+        fn getUserVideosOwned(impl: *const anyopaque, alloc: Allocator) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserVideosOwned(alloc);
         }
 
-        fn userMusic(impl: *const anyopaque) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userMusic();
+        fn getUserMusicOwned(impl: *const anyopaque, alloc: Allocator) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserMusicOwned(alloc);
         }
 
-        fn userDesktop(impl: *const anyopaque) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userDesktop();
+        fn getUserDesktopOwned(impl: *const anyopaque, alloc: Allocator) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserDesktopOwned(alloc);
         }
 
-        fn userRuntime(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).userRuntime(o);
+        fn getUserRuntimeOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getUserRuntimeOwned(alloc, o);
         }
 
-        fn siteRuntime(impl: *const anyopaque, o: *const Options) DirsError![]const u8 {
-            return TPtr(ImplType, impl).siteRuntime(o);
+        fn getSiteRuntimeOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+            return TPtr(ImplType, impl).getSiteRuntimeOwned(alloc, o);
         }
 
         fn pathSeperator(impl: *const anyopaque) u8 {
@@ -135,64 +135,72 @@ pub fn implBy(impl_obj: anytype) Locator {
 }
 
 
-pub fn userData(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_userData(self.impl, o);
+pub fn getUserHomeOwned(self: Locator, alloc: Allocator) DirsError![]const u8 {
+    return self.vtable.v_getUserDataOwned(self.impl, alloc);
 }
 
-pub fn siteData(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_siteData(self.impl, o);
+pub fn getUserDataOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getUserDataOwned(self.impl, alloc, o);
 }
 
-pub fn userConfig(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_userConfig(self.impl, o);
+pub fn getSiteDataOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getSiteDataOwned(self.impl, alloc, o);
 }
 
-pub fn siteConfig(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_siteConfig(self.impl, o);
+pub fn getUserConfigOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getUserConfigOwned(self.impl, alloc, o);
 }
 
-pub fn userCache(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_userCache(self.impl, o);
+pub fn getSiteConfigOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getSiteConfigOwned(self.impl, alloc, o);
 }
 
-pub fn siteCache(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_siteCache(self.impl, o);
+pub fn getUserCacheOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getUserCacheOwned(self.impl, alloc, o);
 }
 
-pub fn userState(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_userState(self.impl, o);
+pub fn getSiteCacheOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getSiteCacheOwned(self.impl, alloc, o);
 }
 
-pub fn userLog(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_userLog(self.impl, o);
+pub fn getUserStateOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getUserStateOwned(self.impl, alloc, o);
 }
 
-pub fn userDocuments(self: Locator) DirsError![]const u8 {
-    return self.vtable.v_userDocuments(self.impl);
+pub fn getUserLogOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getUserLogOwned(self.impl, alloc, o);
 }
 
-pub fn userPictures(self: Locator) DirsError![]const u8 {
-    return self.vtable.v_userPictures(self.impl);
+pub fn getUserDocumentsOwned(self: Locator, alloc: Allocator) DirsError![]const u8 {
+    return self.vtable.v_getUserDocumentsOwned(self.impl, alloc);
 }
 
-pub fn userVideos(self: Locator) DirsError![]const u8 {
-    return self.vtable.v_userVideos(self.impl);
+pub fn getUserPicturesOwned(self: Locator, alloc: Allocator) DirsError![]const u8 {
+    return self.vtable.v_getUserPicturesOwned(self.impl, alloc);
 }
 
-pub fn userMusic(self: Locator) DirsError![]const u8 {
-    return self.vtable.v_userMusic(self.impl);
+pub fn getUserVideosOwned(self: Locator, alloc: Allocator) DirsError![]const u8 {
+    return self.vtable.v_getUserVideosOwned(self.impl, alloc);
 }
 
-pub fn userDesktop(self: Locator) DirsError![]const u8 {
-    return self.vtable.v_userDesktop(self.impl);
+pub fn getUserMusicOwned(self: Locator, alloc: Allocator) DirsError![]const u8 {
+    return self.vtable.v_getUserMusicOwned(self.impl, alloc);
 }
 
-pub fn userRuntime(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_userRuntime(self.impl, o);
+pub fn getUserDesktopOwned(self: Locator, alloc: Allocator) DirsError![]const u8 {
+    return self.vtable.v_getUserDesktopOwned(self.impl, alloc);
 }
 
-pub fn siteRuntime(self: Locator, o: *const Options) DirsError![]const u8 {
-    return self.vtable.v_siteRuntime(self.impl, o);
+pub fn getUserRuntimeOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getUserRuntimeOwned(self.impl, alloc, o);
+}
+
+pub fn getSiteRuntimeOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    return self.vtable.v_getSiteRuntimeOwned(self.impl, alloc, o);
+}
+
+pub fn pathSeperator(self: Locator) u8 {
+    return self.vtable.v_pathSeperator(self.impl);
 }
 
 
