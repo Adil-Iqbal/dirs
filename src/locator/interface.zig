@@ -23,7 +23,6 @@ const VTable = struct {
     v_getUserDesktopOwned: *const fn(*const anyopaque, Allocator) DirsError![]const u8, 
     v_getUserRuntimeOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8, 
     v_getSiteRuntimeOwned: *const fn(*const anyopaque, Allocator, *const Options) DirsError![]const u8,
-    v_pathSeperator: *const fn(*const anyopaque) DirsError!u8,
 };
 
 impl: *const anyopaque,
@@ -95,10 +94,6 @@ inline fn LocatorDelegate(impl_obj: anytype) type {
         fn getSiteRuntimeOwned(impl: *const anyopaque, alloc: Allocator, o: *const Options) DirsError![]const u8 {
             return TPtr(ImplType, impl).getSiteRuntimeOwned(alloc, o);
         }
-
-        fn pathSeperator(impl: *const anyopaque) u8 {
-            return TPtr(ImplType, impl).pathSeperator();
-        }
     };
 }
 
@@ -126,7 +121,6 @@ pub fn implBy(impl_obj: anytype) Locator {
         .v_getUserDesktopOwned = delegate.getUserDesktopOwned, 
         .v_getUserRuntimeOwned = delegate.getUserRuntimeOwned, 
         .v_getSiteRuntimeOwned = delegate.getSiteRuntimeOwned,
-        .v_pathSeperator = delegate.pathSeperator,
     };
     return .{
         .impl = impl_obj,
@@ -198,9 +192,4 @@ pub fn getUserRuntimeOwned(self: Locator, alloc: Allocator, o: *const Options) D
 pub fn getSiteRuntimeOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {
     return self.vtable.v_getSiteRuntimeOwned(self.impl, alloc, o);
 }
-
-pub fn pathSeperator(self: Locator) u8 {
-    return self.vtable.v_pathSeperator(self.impl);
-}
-
 

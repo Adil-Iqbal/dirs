@@ -70,8 +70,3 @@ pub fn getSiteRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) Dirs
     return DirsError.UnsupportedOperationError;
 }
 
-pub fn pathSeperator(_: *const Self) u8 {
-    return DirsError.UnsupportedOperationError;
-}
-
-

@@ -1,11 +1,14 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const Allocator = std.mem.Allocator;
+const SplitIterator = std.mem.SplitIterator;
 const Tag = std.Target.Os.Tag;
 const Locator = @import("locator/interface.zig");
 const UnsupportedOSLocator = @import("locator/unsupported.zig");
+const util = @import("locator/util.zig");
+pub const MultiPathIterator = util.MultiPathIterator;
 
-/// Consider using `init` method instead!
+/// Consider using `init` method instead.
 ///
 /// If your app will only run on Windows OS and is severely memory constrained,
 /// use `WinLocator` directly to maximally reduce the memory footprint of this
@@ -60,15 +63,16 @@ pub fn init(tag: Tag) void {
     };
 }
 
-/// Non-standard directory for application storage. Consider only for bespoke
-/// solutions. Caller is responsible for freeing the returned value.
+/// Non-standard directory for application storage. Returns the user's home
+/// directory. Consider only for bespoke solutions. Caller is responsible for
+/// freeing the returned memory.
 pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
     runtimeInitIfNeeded();
     return Dirs.locator.getUserHomeOwned(alloc);
 }
 
 /// Standard directory for storage of user-owned and application-specific files
-/// that the user wouldn't modify but uould reasonably keep or back-up. Caller
+/// that the user wouldn't modify but would reasonably keep or back-up. Caller
 /// is responsible for freeing the returned value.
 pub fn getUserDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
@@ -178,15 +182,21 @@ pub fn getSiteRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]cons
     return Dirs.locator.ownedSiteRuntime(o, alloc);
 }
 
-pub const Iterator = struct {
-    items: [3]?DirsError![]const u8,
-    index: usize,
-
-    pub fn next(self: *Iterator) ?DirsError![]const u8 {
-        if (self.index >= self.items.len)
-            return null;
-        const item = self.items[self.index];
-        self.index += 1;
-        return item;
-    }
-};
+/// Returns iterator that iterates over individual file paths in a slice that
+/// may contain multiple file paths in a manner that is operating system
+/// agnostic.
+///
+/// On a unix operating system:
+/// multiPathIterator("/usr/bin:/etc") will return "/usr/bin", "/etc", null.
+/// multiPathIterator("/etc") will return "/etc", null.
+///
+/// On a windows operating system:
+/// multiPathIterator("C:\\Program Files;C:\\User") will return
+/// "C:\\Program Files", "C:\\User", null.
+/// multiPathIterator("C:\\Program Files") will return "C:\\Program Files", null.
+///
+/// See Also: `std.mem.splitScalar`, `std.fs.path.delimiter`
+pub fn multiPathIterator(paths: []const u8) MultiPathIterator {
+    const os_delimiter = std.fs.path.delimiter;
+    return util.multiPathIteratorExplicitDelimiter(paths, os_delimiter);
+}

@@ -71,6 +71,6 @@ pub fn getSiteRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) Dirs
 }
 
 pub fn pathSeperator(_: *const Self) u8 {
-    return DirsError.UnsupportedOSError;
+    return 0;
 }
 
