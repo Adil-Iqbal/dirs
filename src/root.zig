@@ -31,16 +31,23 @@ pub const UnixLocator = @import("locator/unix.zig");
 
 pub const Options = @import("locator/options.zig");
 pub const DirsError = @import("locator/error.zig").DirsError;
-pub const is_supported = util.getSupportedOS(builtin.target.os.tag) != null;
 
+const os = util.getSupportedOS(builtin.target.os.tag);
 const Self = @This();
 
-var locator: Locator = switch (builtin.target.os.tag) {
+var locator: Locator = switch (os) {
     .windows => Locator.implBy(&WinLocator{}),
     .macos => Locator.implby(&MacOSLocator{}),
     .linux, .freebsd => Locator.implBy(&UnixLocator{}),
-    else => Locator.implBy(&UnsupportedOSLocator{}),
+    null => Locator.implBy(&UnsupportedOSLocator{}),
+    // The `else` keyword is not allowed here.
+    // Compiler must handle `switch` exhaustively.
 };
+
+/// Use this boolean flag to check if this library supports the target
+/// operating system. If not, consider using fallback values or throw
+/// a `@compileError` as a defensive measure.
+pub const is_supported = os != null;
 
 /// Non-standard directory for application storage. Returns the user's home
 /// directory. Consider only for bespoke solutions. Caller is responsible for
