@@ -15,14 +15,14 @@ const Self = @This();
 /// Joins `base_path` with `app_name` and `version` from options if they are present.
 /// Allocates memory for the result. Caller owns the returned slice.
 fn appendNameAndVersion(alloc: Allocator, base_path: []const u8, o: *const Options) ![]const u8 {
-    var parts = ArrayList([]const u8).init(alloc);
-    defer parts.deinit();
+    var parts: ArrayList([]const u8) = .empty;
+    defer parts.deinit(alloc);
 
-    try parts.append(base_path);
+    try parts.append(alloc, base_path);
     if (!isNullOrBlank(o.app_name)) {
-        try parts.append(o.app_name.?);
+        try parts.append(alloc, o.app_name.?);
         if (!isNullOrBlank(o.version)) {
-            try parts.append(o.version.?);
+            try parts.append(alloc, o.version.?);
         }
     }
 
@@ -41,34 +41,29 @@ fn isBlank(s: []const u8) bool {
     return trimmed.len == 0;
 }
 
-/// Returns true if `paths` contains `pathsep` byte.
-fn isMultiPath(paths: []const u8, pathsep: u8) bool {
-    return std.mem.indexOfScalar(u8, paths, pathsep) != null;
-}
-
 /// Splits a multipath string by `pathsep`, appends name/version to each part, and rejoins them.
 /// Allocates memory for the result. Caller owns the returned slice.
 fn transformMultiPath(alloc: Allocator, path_str: []const u8, pathsep: u8, o: *const Options) DirsError![]const u8 {
-    var result_parts = ArrayList(u8).init(alloc);
-    defer result_parts.deinit();
+    var result_parts: ArrayList(u8) = .empty;
+    defer result_parts.deinit(alloc);
 
     var it = std.mem.splitScalar(u8, path_str, pathsep);
     var first = true;
 
     while (it.next()) |dir| {
         if (isBlank(dir)) continue;
-        if (!first) try result_parts.append(pathsep);
+        if (!first) try result_parts.append(alloc, pathsep);
         first = false;
         
         const full_path = appendNameAndVersion(alloc, dir, o) catch return DirsError.OperationFailed;
         defer alloc.free(full_path);
-        try result_parts.appendSlice(full_path);
+        try result_parts.appendSlice(alloc, full_path);
     }
 
     if (result_parts.items.len == 0) 
         return DirsError.OperationFailed;
 
-    return result_parts.toOwnedSlice();
+    return result_parts.toOwnedSlice(alloc);
 }
 
 /// Returns the first valid component of a multipath string, with name/version appended.
@@ -86,7 +81,7 @@ fn getFirstPath(alloc: Allocator, path_str: []const u8, pathsep: u8, o: *const O
 
 /// Retrieves the current user's home directory.
 /// Allocates memory for the result. Caller owns the returned slice.
-pub fn getUserHome(_: *const Self, alloc: Allocator) DirsError![]const u8 {
+pub fn getUserHomeOwned(_: *const Self, alloc: Allocator) DirsError![]const u8 {
     if (std.process.getEnvVarOwned(alloc, "HOME")) |home| {
         if (!isBlank(home)) return home;
         alloc.free(home);
@@ -94,7 +89,7 @@ pub fn getUserHome(_: *const Self, alloc: Allocator) DirsError![]const u8 {
 
     const uid = std.posix.getuid();
     if (c.getpwuid(uid)) |passwd| {
-        if (passwd.pw_dir) |dir_ptr| {
+        if (passwd.*.pw_dir) |dir_ptr| {
             const dir_span = std.mem.span(dir_ptr);
             if (!isBlank(dir_span)) {
                 return alloc.dupe(u8, dir_span) catch DirsError.OperationFailed;
@@ -107,14 +102,14 @@ pub fn getUserHome(_: *const Self, alloc: Allocator) DirsError![]const u8 {
 
 /// Returns the user data directory (e.g., $XDG_DATA_HOME or ~/.local/share).
 /// Allocates memory for the result. Caller owns the returned slice.
-pub fn getUserData(self: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+pub fn getUserDataOwned(self: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
     if (std.process.getEnvVarOwned(alloc, "XDG_DATA_HOME")) |xdg_home| {
         defer alloc.free(xdg_home);
         if (!isBlank(xdg_home)) 
             return appendNameAndVersion(alloc, xdg_home, o) catch DirsError.OperationFailed;
     } else |_| {}
 
-    const user_home = try self.getUserHome(alloc);
+    const user_home = try self.getUserHomeOwned(alloc);
     defer alloc.free(user_home);
 
     const default_base = path.join(alloc, &.{ user_home, ".local", "share" }) catch return DirsError.OperationFailed;
@@ -127,9 +122,8 @@ const default_site_data = "/usr/local/share:/usr/share";
 
 /// Returns the site data directory (e.g. XDG_DATA_DIRS).
 /// Allocates memory for the result. Caller owns the returned slice.
-pub fn getSiteData(self: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    const pathsep = std.fs.path.delimieter;
-    const wants_multipath = o.multipath orelse false;
+pub fn getSiteDataOwned(_: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
+    const pathsep = std.fs.path.delimiter;
 
     var raw_path: []const u8 = undefined;
     var must_free_raw = false;
@@ -152,11 +146,15 @@ pub fn getSiteData(self: *const Self, alloc: Allocator, o: *const Options) DirsE
         return appendNameAndVersion(alloc, raw_path, o) catch DirsError.OperationFailed;
     }
 
-    if (!wants_multipath) {
+    if (!o.multipath) {
         return getFirstPath(alloc, raw_path, pathsep, o);
     }
 
     return transformMultiPath(alloc, raw_path, pathsep, o);
+}
+
+pub fn getUserConfigOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
+    return DirsError.UnsupportedOperationError;
 }
 
 pub fn getSiteConfigOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {

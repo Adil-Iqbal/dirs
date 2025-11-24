@@ -130,7 +130,7 @@ pub fn implBy(impl_obj: anytype) Locator {
 
 
 pub fn getUserHomeOwned(self: Locator, alloc: Allocator) DirsError![]const u8 {
-    return self.vtable.v_getUserDataOwned(self.impl, alloc);
+    return self.vtable.v_getUserHomeOwned(self.impl, alloc);
 }
 
 pub fn getUserDataOwned(self: Locator, alloc: Allocator, o: *const Options) DirsError![]const u8 {

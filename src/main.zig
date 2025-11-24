@@ -3,9 +3,10 @@ const dirs = @import("dirs");
 const builtin = @import ("builtin");
 
 pub fn main() !void {
-    const gpa = std.heap.FixedBufferAllocator(.{}){};
+    var buffer: [2048]u8 = undefined;
+    var gpa = std.heap.FixedBufferAllocator.init(&buffer);
     const alloc = gpa.allocator();
     _ = dirs.init(builtin.target.os.tag);
-    _ = dirs.getUserHomeOwned(alloc);
+    _ = try dirs.getUserHomeOwned(alloc);
 }
 

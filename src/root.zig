@@ -68,7 +68,7 @@ pub fn init(tag: Tag) void {
 /// freeing the returned memory.
 pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.getUserHomeOwned(alloc);
+    return try Dirs.locator.?.getUserHomeOwned(alloc);
 }
 
 /// Standard directory for storage of user-owned and application-specific files
@@ -76,7 +76,7 @@ pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
 /// is responsible for freeing the returned value.
 pub fn getUserDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.getUserDataOwned(o, alloc);
+    return try Dirs.locator.?.getUserDataOwned(o, alloc);
 }
 
 /// Standard directory for storage of user-owned and application-specific files
@@ -84,21 +84,21 @@ pub fn getUserDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u
 /// Available to all users.
 pub fn getSiteDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.getSiteDataOwned(o, alloc);
+    return try Dirs.locator.?.getSiteDataOwned(o, alloc);
 }
 
 /// Standard directory for storage of user-specific configuration files.
 /// Consider for editable files that customize the behavior of the application.
 pub fn getUserConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserConfig(o, alloc);
+    return try Dirs.locator.?.ownedUserConfig(o, alloc);
 }
 
 /// Standard directory for storage of configuration files needed by all users.
 /// Consider for editable files that customize the behavior of the application.
 pub fn getSiteConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedSiteConfig(o, alloc);
+    return try Dirs.locator.?.ownedSiteConfig(o, alloc);
 }
 
 /// Standard directory for storage of user specific cached data that can be 
@@ -106,7 +106,7 @@ pub fn getSiteConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const
 /// Consider for downloaded assets or compiled templates.
 pub fn getUserCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserCache(o, alloc);
+    return try Dirs.locator.?.ownedUserCache(o, alloc);
 }
 
 /// Standard directory for storage of cached data for all users that can be 
@@ -114,7 +114,7 @@ pub fn getUserCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const 
 /// Consider for downloaded assets or compiled templates.
 pub fn getSiteCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedSiteCache(o, alloc);
+    return try Dirs.locator.?.ownedSiteCache(o, alloc);
 }
 
 /// Standard directory for storage of user specific files that represent
@@ -122,14 +122,14 @@ pub fn getSiteCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const 
 /// Consider for files that represent the data layer of the application.
 pub fn getUserStateOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserState(o, alloc);
+    return try Dirs.locator.?.ownedUserState(o, alloc);
 }
 
 /// Standard directory for storage of user specific log files.
 /// Consider for files that can be used to audit application behavior.
 pub fn getUserLogOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserLog(o, alloc);
+    return try Dirs.locator.?.ownedUserLog(o, alloc);
 }
 
 /// Standard directory for storage of user-owned files that are
@@ -137,50 +137,52 @@ pub fn getUserLogOwned(alloc: Allocator, o: *const Options) DirsError![]const u8
 /// expcted to use outside the context of your application, such as exports.
 pub fn getUserDocumentsOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserDocuments(alloc);
+    return try Dirs.locator.?.ownedUserDocuments(alloc);
 }
 
 /// Standard directory for storage of user-specific image files.
 /// Consider for file formats: .jpg, .gif, .png, .tiff
 pub fn getUserPicturesOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserPictures(alloc);
+    return try Dirs.locator.?.ownedUserPictures(alloc);
 }
 
 /// Standard directory for storage of user-specific video files.
 /// Consider for file formats: .mp4, .mov, .wmv
 pub fn getUserVideosOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserVideos(alloc);
+    return try Dirs.locator.?.ownedUserVideos(alloc);
 }
 
 /// Standard directory for storage of user-specific audio files. 
 /// Consider for file formats: .wav, .mp3, .midi
 pub fn getUserMusicOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserMusic(alloc);
+    return try Dirs.locator.?.ownedUserMusic(alloc);
 }
 
 /// Standard directory that renders file contents on the user's 
 /// Desktop. Consider for shortcuts and symlinks to your application.
 pub fn getUserDesktopOwned(alloc: Allocator) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserDesktop(alloc);
+    return try Dirs.locator.?.ownedUserDesktop(alloc);
 }
 
 /// Standard directory for storage of user specific temporary files that
 /// support application runtime.
 pub fn getUserRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedUserRuntime(o, alloc);
+    return try Dirs.locator.?.ownedUserRuntime(o, alloc);
 }
 
 /// Standard directory for storage of temporary files that support application
 /// runtime for all users.
 pub fn getSiteRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     runtimeInitIfNeeded();
-    return Dirs.locator.ownedSiteRuntime(o, alloc);
+    return try Dirs.locator.?.ownedSiteRuntime(o, alloc);
 }
+
+pub fn isMultiPath = util.isMultiPath;
 
 /// Returns iterator that iterates over individual file paths in a slice that
 /// may contain multiple file paths in a manner that is operating system
@@ -199,4 +201,26 @@ pub fn getSiteRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]cons
 pub fn multiPathIterator(paths: []const u8) MultiPathIterator {
     const os_delimiter = std.fs.path.delimiter;
     return util.multiPathIteratorExplicitDelimiter(paths, os_delimiter);
+}
+
+/// Will attempt to create all directories in the directory paths provided. 
+pub fn ensureExists(paths: []const u8) !void {
+    if (paths.len == 0) 
+        return;
+
+    const cwd = std.fs.cwd();
+    var it = multiPathIterator(paths);
+    while(it.next()) |path| {
+        if (path.len == 0) continue;
+
+        if (cwd.statFile(path)) |_| {
+            continue;
+        }
+
+        const last_char = path[path.len - 1];
+        if (last_char == '/' or last_char == std.fs.path.sep) {
+            try std.fs.cwd().makePath(path);
+            continue;
+        }
+    }
 }
