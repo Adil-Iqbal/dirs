@@ -22,8 +22,8 @@ pub const WinLocator = @import("./locator/win.zig");
 /// const dirs = @import("dirs").MacOSLocator {};
 pub const MacOSLocator = @import("locator/macos.zig");
 
-/// If your app will only run on Linux or FreeBSD OS and is severely memory 
-/// constrained, use `UnixLocator` directly to maximally reduce the memory 
+/// If your app will only run on Linux or FreeBSD OS and is severely memory
+/// constrained, use `UnixLocator` directly to maximally reduce the memory
 /// footprint of this library.
 ///
 /// const dirs = @import("dirs").UnixLocator {};
@@ -35,14 +35,12 @@ pub const is_supported = util.getSupportedOS(builtin.target.os.tag) != null;
 
 const Self = @This();
 
-
-var locator: Locator = switch(builtin.target.os.tag) {
-    .windows => Locator.implBy(&WinLocator {}),
-    .macos => Locator.implby(&MacOSLocator {}),
-    .linux, .freebsd => Locator.implBy(&UnixLocator {}),
-    else => Locator.implBy(&UnsupportedOSLocator {}),
+var locator: Locator = switch (builtin.target.os.tag) {
+    .windows => Locator.implBy(&WinLocator{}),
+    .macos => Locator.implby(&MacOSLocator{}),
+    .linux, .freebsd => Locator.implBy(&UnixLocator{}),
+    else => Locator.implBy(&UnsupportedOSLocator{}),
 };
-
 
 /// Non-standard directory for application storage. Returns the user's home
 /// directory. Consider only for bespoke solutions. Caller is responsible for
@@ -77,15 +75,15 @@ pub fn getSiteConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const
     return try Self.locator.getSiteConfigOwned(alloc, o);
 }
 
-/// Standard directory for storage of user specific cached data that can be 
-/// deleted at any time without loss of application functionality. 
+/// Standard directory for storage of user specific cached data that can be
+/// deleted at any time without loss of application functionality.
 /// Consider for downloaded assets or compiled templates.
 pub fn getUserCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     return try Self.locator.getUserCacheOwned(alloc, o);
 }
 
-/// Standard directory for storage of cached data for all users that can be 
-/// deleted at any time without loss of application functionality. 
+/// Standard directory for storage of cached data for all users that can be
+/// deleted at any time without loss of application functionality.
 /// Consider for downloaded assets or compiled templates.
 pub fn getSiteCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
     return try Self.locator.getSiteCacheOwned(alloc, o);
@@ -123,13 +121,13 @@ pub fn getUserVideosOwned(alloc: Allocator) DirsError![]const u8 {
     return try Self.locator.getUserVideosOwned(alloc);
 }
 
-/// Standard directory for storage of user-specific audio files. 
+/// Standard directory for storage of user-specific audio files.
 /// Consider for file formats: .wav, .mp3, .midi
 pub fn getUserMusicOwned(alloc: Allocator) DirsError![]const u8 {
     return try Self.locator.getUserMusicOwned(alloc);
 }
 
-/// Standard directory that renders file contents on the user's 
+/// Standard directory that renders file contents on the user's
 /// Desktop. Consider for shortcuts and symlinks to your application.
 pub fn getUserDesktopOwned(alloc: Allocator) DirsError![]const u8 {
     return try Self.locator.getUserDesktopOwned(alloc);
@@ -168,14 +166,14 @@ pub fn multipathIterator(paths: []const u8) MultipathIterator {
     return util.multipathIteratorExplicitDelimiter(paths, os_delimiter);
 }
 
-/// Will attempt to create all directories in the directory paths provided. 
+/// Will attempt to create all directories in the directory paths provided.
 pub fn ensureExists(paths: []const u8) !void {
-    if (paths.len == 0) 
+    if (paths.len == 0)
         return;
 
     const cwd = std.fs.cwd();
     var it = multipathIterator(paths);
-    while(it.next()) |path| {
+    while (it.next()) |path| {
         if (path.len == 0) continue;
         if (util.pathExists(path)) continue;
 

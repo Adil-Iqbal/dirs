@@ -3,7 +3,6 @@
 /// you have a helper method that is only intended for a specific operating
 /// system, please place that method in the same file that contains the locator
 /// for that operating system.
-
 const std = @import("std");
 const builtin = @import("builtin");
 const testing = std.testing;
@@ -111,6 +110,18 @@ pub fn isMultipath(slice: []const u8) bool {
     return isMultipathExplicitDelimiter(slice, std.fs.path.delimiter);
 }
 
+test "test isMultipath" {
+    const contains_delim = "abc" ++ [_]u8{std.fs.path.delimiter} ++ "def";
+    const no_delim = "abcdef";
+    const empty = "";
+    const only_delim = [_]u8{std.fs.path.delimiter};
+
+    try testing.expect(isMultipath(contains_delim));
+    try testing.expect(isMultipath(only_delim));
+    try testing.expect(!isMultipath(no_delim));
+    try testing.expect(!isMultipath(empty));
+}
+
 /// Return true if path exists (even if we cannot access the path from this
 /// program). Does not validate or handle case where `path` represents multiple
 /// paths. Must not be exposed to library user to avoid race condition between
@@ -122,7 +133,3 @@ pub fn singlePathExists(path: []const u8) bool {
     };
     return true;
 }
-
-    
-
-

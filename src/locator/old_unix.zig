@@ -36,7 +36,7 @@ fn takeAppendNameAndVersionOwned(alloc: Allocator, base_path: *const []u8, o: *c
     const path_with_name: []u8 = path.join(alloc, &.{ base_path.*, o.app_name.?.* }) catch {
         return base_path.*;
     };
-    
+
     alloc.free(base_path);
     return takeAppendVersionOwned(alloc, &path_with_name, o);
 }
@@ -136,7 +136,7 @@ pub fn getUserHomeOwned(_: *const Self, alloc: Allocator) DirsError![]const u8 {
     const user_home = std.mem.span(pw_dir);
     if (isBlank(&user_home))
         return DirsError.OperationFailed;
-    
+
     return try alloc.dupe(u8, user_home);
 }
 

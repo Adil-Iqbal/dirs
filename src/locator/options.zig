@@ -1,6 +1,6 @@
 /// The name of the application will be appended to the path in the
 /// standardized format for the target operating system. When not provided, the
-/// base path will be returned as per your request. 
+/// base path will be returned as per your request.
 app_name: ?[]const u8 = null,
 
 /// The author of the application (which may also be a company name) will be
@@ -30,4 +30,3 @@ multipath: bool = false,
 /// Will apply informed opinions to path structure. Opinions are documented on
 /// structs that implement the `Locator` interface.
 opinion: bool = false,
-

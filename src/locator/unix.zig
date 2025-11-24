@@ -54,13 +54,13 @@ fn transformMultiPath(alloc: Allocator, path_str: []const u8, pathsep: u8, o: *c
         if (isBlank(dir)) continue;
         if (!first) try result_parts.append(alloc, pathsep);
         first = false;
-        
+
         const full_path = appendNameAndVersion(alloc, dir, o) catch return DirsError.OperationFailed;
         defer alloc.free(full_path);
         try result_parts.appendSlice(alloc, full_path);
     }
 
-    if (result_parts.items.len == 0) 
+    if (result_parts.items.len == 0)
         return DirsError.OperationFailed;
 
     return result_parts.toOwnedSlice(alloc);
@@ -105,7 +105,7 @@ pub fn getUserHomeOwned(_: *const Self, alloc: Allocator) DirsError![]const u8 {
 pub fn getUserDataOwned(self: *const Self, alloc: Allocator, o: *const Options) DirsError![]const u8 {
     if (std.process.getEnvVarOwned(alloc, "XDG_DATA_HOME")) |xdg_home| {
         defer alloc.free(xdg_home);
-        if (!isBlank(xdg_home)) 
+        if (!isBlank(xdg_home))
             return appendNameAndVersion(alloc, xdg_home, o) catch DirsError.OperationFailed;
     } else |_| {}
 
@@ -131,7 +131,7 @@ pub fn getSiteDataOwned(_: *const Self, alloc: Allocator, o: *const Options) Dir
     if (std.process.getEnvVarOwned(alloc, "XDG_DATA_DIRS")) |env_val| {
         if (isBlank(env_val)) {
             alloc.free(env_val);
-            raw_path = default_site_data; 
+            raw_path = default_site_data;
         } else {
             raw_path = env_val;
             must_free_raw = true;
@@ -139,7 +139,7 @@ pub fn getSiteDataOwned(_: *const Self, alloc: Allocator, o: *const Options) Dir
     } else |_| {
         raw_path = default_site_data;
     }
-    
+
     defer if (must_free_raw) alloc.free(raw_path);
 
     if (!isMultiPath(raw_path, pathsep)) {

@@ -1,6 +1,6 @@
 const std = @import("std");
 const dirs = @import("dirs");
-const builtin = @import ("builtin");
+const builtin = @import("builtin");
 
 pub fn main() !void {
     var buffer: [2048]u8 = undefined;
@@ -9,4 +9,3 @@ pub fn main() !void {
     _ = dirs.init(builtin.target.os.tag);
     _ = try dirs.getUserHomeOwned(alloc);
 }
-

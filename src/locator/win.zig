@@ -69,4 +69,3 @@ pub fn getUserRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) Dirs
 pub fn getSiteRuntimeOwned(_: *const Self, _: Allocator, _: *const Options) DirsError![]const u8 {
     return DirsError.UnsupportedOperationError;
 }
-
