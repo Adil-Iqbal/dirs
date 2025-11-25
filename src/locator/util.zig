@@ -5,7 +5,17 @@
 /// for that operating system.
 const std = @import("std");
 const builtin = @import("builtin");
+const c = @cImport({
+    @cInclude("pwd.h");
+});
+
+const path = std.fs.path;
 const testing = std.testing;
+const Allocator = std.mem.Allocator;
+const ArrayList = std.ArrayList;
+
+const Options = @import("options.zig");
+const DirsError = @import("error.zig");
 
 pub const MultipathIterator = std.mem.SplitIterator(u8, .scalar);
 
@@ -126,10 +136,114 @@ test "test isMultipath" {
 /// program). Does not validate or handle case where `path` represents multiple
 /// paths. Must not be exposed to library user to avoid race condition between
 /// time-of-check and time-of-use.
-pub fn singlePathExists(path: []const u8) bool {
-    std.fs.cwd().access(path, .{}) catch |err| switch (err) {
+pub fn singlePathExists(spath: []const u8) bool {
+    std.fs.cwd().access(spath, .{}) catch |err| switch (err) {
         error.NotDir, error.FileNotFound => return false,
         else => return true,
     };
     return true;
 }
+
+
+/// Joins `base_path` with `app_name` and `version` from options if they are present.
+/// Allocates memory for the result. Caller owns the returned slice.
+fn appendNameAndVersion(alloc: Allocator, base_path: []const u8, o: *const Options) ![]const u8 {
+    var parts: ArrayList([]const u8) = .empty;
+    defer parts.deinit(alloc);
+
+    try parts.append(alloc, base_path);
+    if (!isNullOrBlank(o.app_name)) {
+        try parts.append(alloc, o.app_name.?);
+        if (!isNullOrBlank(o.version)) {
+            try parts.append(alloc, o.version.?);
+        }
+    }
+
+    return try path.join(alloc, parts.items);
+}
+
+/// Returns true if slice is null, empty, or whitespace only.
+pub fn isNullOrBlank(s: ?[]const u8) bool {
+    return s == null or isBlank(s.?);
+}
+
+test "isNullOrBlank" {
+    try testing.expect(isNullOrBlank(null));
+    try testing.expect(isNullOrBlank(""));
+    try testing.expect(isNullOrBlank("\t "));
+    try testing.expect(!isNullOrBlank("abc"));
+}
+
+/// Returns true if slice is empty or whitespace only.
+pub fn isBlank(s: []const u8) bool {
+    if (s.len == 0) return true;
+    const trimmed = std.mem.trim(u8, s, &std.ascii.whitespace);
+    return trimmed.len == 0;
+}
+
+test "isBlank" {
+    try testing.expect(isNullOrBlank(""));
+    try testing.expect(isNullOrBlank("\t "));
+    try testing.expect(!isNullOrBlank("abc"));
+}
+
+/// Retrieves the current user's home directory.
+/// Allocates memory for the result. Caller owns the returned slice.
+pub fn unixUserHomeOwned(alloc: Allocator) DirsError![]const u8 {
+    if (std.process.getEnvVarOwned(alloc, "HOME")) |home| {
+        if (!isBlank(home)) return home;
+        alloc.free(home);
+    } else |_| {}
+
+    const uid = std.posix.getuid();
+    if (c.getpwuid(uid)) |passwd| {
+        if (passwd.*.pw_dir) |dir_ptr| {
+            const dir_span = std.mem.span(dir_ptr);
+            if (!isBlank(dir_span)) {
+                return try alloc.dupe(u8, dir_span);
+            }
+        }
+    }
+
+    return DirsError.OperationFailed;
+}
+
+/// Splits a multipath string by `pathsep`, appends name/version to each part, and rejoins them.
+/// Allocates memory for the result. Caller owns the returned slice.
+fn transformMultiPath(alloc: Allocator, path_str: []const u8, o: *const Options) DirsError![]const u8 {
+    var result_parts: ArrayList(u8) = .empty;
+    defer result_parts.deinit(alloc);
+
+    var it = multipathIteratorExplicitDelimiter(path_str, std.fs.path.delimiter);
+    var first = true;
+
+    while (it.next()) |dir| {
+        if (isBlank(dir)) continue;
+        if (!first) try result_parts.append(alloc, std.fs.path.delimiter);
+        first = false;
+
+        const full_path = appendNameAndVersion(alloc, dir, o) catch return DirsError.OperationFailed;
+        defer alloc.free(full_path);
+        try result_parts.appendSlice(alloc, full_path);
+    }
+
+    if (result_parts.items.len == 0)
+        return DirsError.OperationFailed;
+
+    return result_parts.toOwnedSlice(alloc);
+}
+
+/// Returns the first valid component of a multipath string, with name/version appended.
+/// Allocates memory for the result. Caller owns the returned slice.
+fn getFirstPath(alloc: Allocator, path_str: []const u8, o: *const Options) DirsError![]const u8 {
+    var it = multipathIteratorExplicitDelimiter(path_str, std.fs.path.delimiter);
+
+    while (it.next()) |dir| {
+        if (isBlank(dir)) continue;
+        return appendNameAndVersion(alloc, dir, o) catch continue;
+    }
+
+    return DirsError.OperationFailed;
+}
+
+
