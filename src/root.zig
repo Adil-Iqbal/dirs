@@ -10,21 +10,22 @@ pub const MultipathIterator = util.MultipathIterator;
 
 /// If your app will only run on Windows OS and is severely memory constrained,
 /// use `WinLocator` directly to maximally reduce the memory footprint of this
-/// library.
+/// library. Note: You will lose I/O and multipath utility methods.
 ///
 /// const dirs = @import("dirs").WinLocator {};
 pub const WinLocator = @import("./locator/win.zig");
 
 /// If your app will only run on Macintosh OS and is severely memory constrained,
 /// use `MacOSLocator` directly to maximally reduce the memory footprint of this
-/// library.
+/// library. Note: You will lose I/O and multipath utility methods.
 ///
 /// const dirs = @import("dirs").MacOSLocator {};
 pub const MacOSLocator = @import("locator/macos.zig");
 
 /// If your app will only run on Linux or FreeBSD OS and is severely memory
 /// constrained, use `UnixLocator` directly to maximally reduce the memory
-/// footprint of this library.
+/// footprint of this library. Note: you will lose I/O and multipath utility
+/// methods.
 ///
 /// const dirs = @import("dirs").UnixLocator {};
 pub const UnixLocator = @import("locator/unix.zig");
@@ -40,8 +41,7 @@ var locator: Locator = switch (os) {
     .macos => Locator.implby(&MacOSLocator{}),
     .linux, .freebsd => Locator.implBy(&UnixLocator{}),
     null => Locator.implBy(&UnsupportedOSLocator{}),
-    // The `else` keyword is not allowed here.
-    // Compiler must handle `switch` exhaustively.
+    else => unreachable,
 };
 
 /// Use this boolean flag to check if this library supports the target
@@ -54,59 +54,76 @@ pub const is_supported = os != null;
 /// freeing the returned memory.
 pub fn getUserHomeOwned(alloc: Allocator) ![]const u8 {
     return try Self.locator.getUserHomeOwned(alloc);
+    
 }
 
 /// Standard directory for storage of user-owned and application-specific files
 /// that the user wouldn't modify but would reasonably keep or back-up. Caller
 /// is responsible for freeing the returned value.
 pub fn getUserDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getUserDataOwned(alloc, o);
+    const result = try Self.locator.getUserDataOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of user-owned and application-specific files
 /// that the users wouldn't modify but would reasonably keep or back-up.
 /// Available to all users.
 pub fn getSiteDataOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getSiteDataOwned(alloc, o);
+    const result = try Self.locator.getSiteDataOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of user-specific configuration files.
 /// Consider for editable files that customize the behavior of the application.
 pub fn getUserConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getUserConfigOwned(alloc, o);
+    const result = try Self.locator.getUserConfigOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of configuration files needed by all users.
 /// Consider for editable files that customize the behavior of the application.
 pub fn getSiteConfigOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getSiteConfigOwned(alloc, o);
+    const result = try Self.locator.getSiteConfigOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of user specific cached data that can be
 /// deleted at any time without loss of application functionality.
 /// Consider for downloaded assets or compiled templates.
 pub fn getUserCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getUserCacheOwned(alloc, o);
+    const result = try Self.locator.getUserCacheOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of cached data for all users that can be
 /// deleted at any time without loss of application functionality.
 /// Consider for downloaded assets or compiled templates.
 pub fn getSiteCacheOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getSiteCacheOwned(alloc, o);
+    const result = try Self.locator.getSiteCacheOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of user specific files that represent
 /// persistent state that must survive application restart.
 /// Consider for files that represent the data layer of the application.
 pub fn getUserStateOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getUserStateOwned(alloc, o);
+    const result = try Self.locator.getUserStateOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of user specific log files.
 /// Consider for files that can be used to audit application behavior.
 pub fn getUserLogOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getUserLogOwned(alloc, o);
+    const result = try Self.locator.getUserLogOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of user-owned files that are
@@ -143,13 +160,17 @@ pub fn getUserDesktopOwned(alloc: Allocator) DirsError![]const u8 {
 /// Standard directory for storage of user specific temporary files that
 /// support application runtime.
 pub fn getUserRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getUserRuntimeOwned(alloc, o);
+    const result = try Self.locator.getUserRuntimeOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 /// Standard directory for storage of temporary files that support application
 /// runtime for all users.
 pub fn getSiteRuntimeOwned(alloc: Allocator, o: *const Options) DirsError![]const u8 {
-    return try Self.locator.getSiteRuntimeOwned(alloc, o);
+    const result = try Self.locator.getSiteRuntimeOwned(alloc, o);
+    try Self.ensureExists(result, o);
+    return result;
 }
 
 pub const isMultipath = util.isMultipath;
@@ -174,20 +195,14 @@ pub fn multipathIterator(paths: []const u8) MultipathIterator {
 }
 
 /// Will attempt to create all directories in the directory paths provided.
-pub fn ensureExists(paths: []const u8) !void {
-    if (paths.len == 0)
-        return;
-
+fn ensureExists(paths: []const u8, o: *const Options) !void {
+    if (!o.ensure_exists or util.isBlank(paths)) return;
+    
     const cwd = std.fs.cwd();
     var it = multipathIterator(paths);
     while (it.next()) |path| {
-        if (path.len == 0) continue;
-        if (util.pathExists(path)) continue;
-
-        const last_char = path[path.len - 1];
-        if (last_char == '/' or last_char == std.fs.path.sep) {
-            try cwd.makePath(path);
-            continue;
-        }
-    }
+        if (util.isNullOrBlank(path)) continue;
+        if (util.singlePathExists(path)) continue;
+        try cwd.makePath(path);
+   }
 }
