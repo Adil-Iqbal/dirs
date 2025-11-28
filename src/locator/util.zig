@@ -3,6 +3,7 @@
 /// you have a helper method that is only intended for a specific operating
 /// system, please place that method in the same file that contains the locator
 /// for that operating system.
+
 const std = @import("std");
 const builtin = @import("builtin");
 const c = @cImport({
@@ -13,6 +14,10 @@ const path = std.fs.path;
 const testing = std.testing;
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
+
+const expect = testing.expect;
+const expectEqualStrings = testing.expectEqualStrings;
+const expectError = testing.expectError;
 
 const Options = @import("options.zig");
 const DirsError = @import("error.zig");
@@ -27,7 +32,7 @@ pub const SupportedOS = enum {
 };
 
 comptime {
-    for (@typeInfo(SupportedOS).Enum.fields) |f| {
+    for (std.enums.values(SupportedOS)) |f| {
         if (!@hasField(std.Target.Os.Tag, f.name))
             @compileError("SupportedOS contains field not present in Os.Tag: " ++ f.name);
     }
@@ -36,7 +41,7 @@ comptime {
 /// Returns `SupportedOS` enumeration based on provided `tag`. If the tag
 /// signifies an unsupported operating system, this method will return `null`.
 pub fn getSupportedOS(tag: std.Target.Os.Tag) ?SupportedOS {
-    inline for (@typeInfo(SupportedOS).Enum.fields) |f| {
+    inline for (std.enums.values(SupportedOS)) |f| {
         if (std.meta.eql(@field(std.Target.Os.Tag, f.name), tag))
             return @field(SupportedOS, f.name);
     }
@@ -44,10 +49,10 @@ pub fn getSupportedOS(tag: std.Target.Os.Tag) ?SupportedOS {
 }
 
 test "getSupportedOS is synchronized with SupportedOS" {
-    inline for (@typeInfo(SupportedOS).Enum.fields) |f| {
+    inline for (std.enums.values(SupportedOS)) |f| {
         const tag = @field(std.Target.Os.Tag, f.name);
         const expected = @field(SupportedOS, f.name);
-        try testing.expect(getSupportedOS(tag).? == expected);
+        try expect(getSupportedOS(tag).? == expected);
     }
 }
 
@@ -56,9 +61,9 @@ test "getSupportedOS returns null for unsupported OS tags" {
         const tag = @field(std.Target.Os.Tag, f.name);
 
         if (@hasField(SupportedOS, f.name)) {
-            try testing.expect(getSupportedOS(tag) != null);
+            try expect(getSupportedOS(tag) != null);
         } else {
-            try testing.expect(getSupportedOS(tag) == null);
+            try expect(getSupportedOS(tag) == null);
         }
     }
 }
@@ -70,28 +75,28 @@ pub fn multipathIteratorExplicitDelimiter(paths: []const u8, delimiter: u8) Mult
 
 test "test iterate over windows paths" {
     var it = multipathIteratorExplicitDelimiter("C:\\Windows;C:\\Program Files", std.fs.path.delimiter_windows);
-    try testing.expectEqualStrings("C:\\Windows", it.next().?);
-    try testing.expectEqualStrings("C:\\Program Files", it.next().?);
-    try testing.expect(it.next() == null);
+    try expectEqualStrings("C:\\Windows", it.next().?);
+    try expectEqualStrings("C:\\Program Files", it.next().?);
+    try expect(it.next() == null);
 }
 
 test "iterate over posix paths" {
     var it = multipathIteratorExplicitDelimiter("/etc:/usr/bin", std.fs.path.delimiter_posix);
-    try testing.expectEqualStrings("/etc", it.next().?);
-    try testing.expectEqualStrings("/usr/bin", it.next().?);
-    try testing.expect(it.next() == null);
+    try expectEqualStrings("/etc", it.next().?);
+    try expectEqualStrings("/usr/bin", it.next().?);
+    try expect(it.next() == null);
 }
 
 test "iterate over single path" {
     var it = multipathIteratorExplicitDelimiter("/etc", std.fs.path.delimiter_posix);
-    try testing.expectEqualStrings("/etc", it.next().?);
-    try testing.expect(it.next() == null);
+    try expectEqualStrings("/etc", it.next().?);
+    try expect(it.next() == null);
 }
 
 test "iterate over empty slice" {
     var it = multipathIteratorExplicitDelimiter("", std.fs.path.delimiter_posix);
-    try testing.expectEqualStrings("", it.next().?);
-    try testing.expect(it.next() == null);
+    try expectEqualStrings("", it.next().?);
+    try expect(it.next() == null);
 }
 
 /// Returns true if `slice` contains `delimiter` byte.
@@ -103,16 +108,16 @@ test "windows isMultipathExplicitDelimiter" {
     const delim = std.fs.path.delimiter_windows;
     const multipath = "C:\\Users;C:\\Program Files";
     const single_path = "C:\\Program Files";
-    try testing.expect(isMultipathExplicitDelimiter(multipath, delim));
-    try testing.expect(isMultipathExplicitDelimiter(single_path, delim));
+    try expect(isMultipathExplicitDelimiter(multipath, delim));
+    try expect(isMultipathExplicitDelimiter(single_path, delim));
 }
 
 test "posix isMultipathExplicitDelimiter" {
     const delim = std.fs.path.delimiter_posix;
     const multipath = "/usr:/etc";
     const single_path = "/usr";
-    try testing.expect(isMultipathExplicitDelimiter(multipath, delim));
-    try testing.expect(isMultipathExplicitDelimiter(single_path, delim));
+    try expect(isMultipathExplicitDelimiter(multipath, delim));
+    try expect(isMultipathExplicitDelimiter(single_path, delim));
 }
 
 /// Returns true if `slice` contains path delimiter byte. OS agnostic.
@@ -126,10 +131,10 @@ test "test isMultipath" {
     const empty = "";
     const only_delim = [_]u8{std.fs.path.delimiter};
 
-    try testing.expect(isMultipath(contains_delim));
-    try testing.expect(isMultipath(only_delim));
-    try testing.expect(!isMultipath(no_delim));
-    try testing.expect(!isMultipath(empty));
+    try expect(isMultipath(contains_delim));
+    try expect(isMultipath(only_delim));
+    try expect(!isMultipath(no_delim));
+    try expect(!isMultipath(empty));
 }
 
 /// Return true if path exists (even if we cannot access the path from this
@@ -143,7 +148,6 @@ pub fn singlePathExists(spath: []const u8) bool {
     };
     return true;
 }
-
 
 /// Joins `base_path` with `app_name` and `version` from options if they are present.
 /// Allocates memory for the result. Caller owns the returned slice.
@@ -162,16 +166,78 @@ fn appendNameAndVersion(alloc: Allocator, base_path: []const u8, o: *const Optio
     return try path.join(alloc, parts.items);
 }
 
+test "appendNameAndVersion name and version are appended" {
+    const alloc = std.testing.allocator;
+    const base = "/base";
+    const o: Options = .{
+        .app_name = "app",
+        .version = "1.0.3",
+    };
+    const expected = "/base/app/1.0.3";
+    const actual = appendNameAndVersion(alloc, base, o);
+    defer alloc.free(actual);
+    try expectEqualStrings(expected, actual);
+}
+
+test "appendNameAndVersion if name only, name is appended" {
+    const alloc = std.testing.allocator;
+    const base = "/base";
+    const o: Options = .{
+        .app_name = "app",
+        .version = null,
+    };
+    const expected = "/base/app";
+    const actual = appendNameAndVersion(alloc, base, o);
+    defer alloc.free(actual);
+    try expectEqualStrings(expected, actual);
+}
+
+test "appendNameAndVersion if ver only, neither is appended" {
+    const alloc = std.testing.allocator;
+    const base = "/base";
+    const o: Options = .{
+        .app_name = null,
+        .version = "1.0.3",
+    };
+    const expected = base;
+    const actual = appendNameAndVersion(alloc, base, o);
+    defer alloc.free(actual);
+    try expectEqualStrings(expected, actual);
+}
+
+test "appendNameAndVersion if neither, neither is appended" {
+    const alloc = std.testing.allocator;
+    const base = "/base";
+    const o: Options = .{
+        .app_name = null,
+        .version = null,
+    };
+    const expected = base;
+    const actual = appendNameAndVersion(alloc, base, o);
+    defer alloc.free(actual);
+    try expectEqualStrings(expected, actual);
+}
+
+test "appendNameAndVersion returns error correctly" {
+    const alloc = std.testing.failing_allocator;
+    const base = "/base";
+    const o: Options = .{
+        .app_name = "app",
+        .version = "1.0.3",
+    };
+    try expectError(error.OutOfMemory, appendNameAndVersion(alloc, base, o));
+}
+
 /// Returns true if slice is null, empty, or whitespace only.
 pub fn isNullOrBlank(s: ?[]const u8) bool {
     return s == null or isBlank(s.?);
 }
 
 test "isNullOrBlank" {
-    try testing.expect(isNullOrBlank(null));
-    try testing.expect(isNullOrBlank(""));
-    try testing.expect(isNullOrBlank("\t "));
-    try testing.expect(!isNullOrBlank("abc"));
+    try expect(isNullOrBlank(null));
+    try expect(isNullOrBlank(""));
+    try expect(isNullOrBlank("\t "));
+    try expect(!isNullOrBlank("abc"));
 }
 
 /// Returns true if slice is empty or whitespace only.
@@ -182,19 +248,14 @@ pub fn isBlank(s: []const u8) bool {
 }
 
 test "isBlank" {
-    try testing.expect(isNullOrBlank(""));
-    try testing.expect(isNullOrBlank("\t "));
-    try testing.expect(!isNullOrBlank("abc"));
+    try expect(isBlank(""));
+    try expect(isBlank("\t "));
+    try expect(!isBlank("abc"));
 }
 
-/// Retrieves the current user's home directory.
+/// Retrieves the current user's home directory from /etc/passwd
 /// Allocates memory for the result. Caller owns the returned slice.
 pub fn unixUserHomeOwned(alloc: Allocator) DirsError![]const u8 {
-    if (std.process.getEnvVarOwned(alloc, "HOME")) |home| {
-        if (!isBlank(home)) return home;
-        alloc.free(home);
-    } else |_| {}
-
     const uid = std.posix.getuid();
     if (c.getpwuid(uid)) |passwd| {
         if (passwd.*.pw_dir) |dir_ptr| {
@@ -208,9 +269,9 @@ pub fn unixUserHomeOwned(alloc: Allocator) DirsError![]const u8 {
     return DirsError.OperationFailed;
 }
 
-/// Splits a multipath string by `pathsep`, appends name/version to each part, and rejoins them.
+/// Splits a multipath string by delimiter, appends name/version to each part, and rejoins them.
 /// Allocates memory for the result. Caller owns the returned slice.
-fn transformMultiPath(alloc: Allocator, path_str: []const u8, o: *const Options) DirsError![]const u8 {
+fn transformMultipath(alloc: Allocator, path_str: []const u8, o: *const Options) DirsError![]const u8 {
     var result_parts: ArrayList(u8) = .empty;
     defer result_parts.deinit(alloc);
 
@@ -222,14 +283,14 @@ fn transformMultiPath(alloc: Allocator, path_str: []const u8, o: *const Options)
         if (!first) try result_parts.append(alloc, std.fs.path.delimiter);
         first = false;
 
-        const full_path = appendNameAndVersion(alloc, dir, o) catch return DirsError.OperationFailed;
+        const full_path = try appendNameAndVersion(alloc, dir, o);
         defer alloc.free(full_path);
         try result_parts.appendSlice(alloc, full_path);
     }
 
     if (result_parts.items.len == 0)
         return DirsError.OperationFailed;
-
+    
     return result_parts.toOwnedSlice(alloc);
 }
 
